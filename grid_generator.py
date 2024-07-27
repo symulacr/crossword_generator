@@ -11,57 +11,50 @@ class GridGenerator:
         self.reset()
 
     def get_grid(self):
+        """Retourne la grille actuelle."""
         return self.grid
 
     def get_words_in_grid(self):
+        """Retourne la liste des mots présents dans la grille."""
         return self.words_in_grid
 
     def generate_grid(self):
-        """ Updates the internal grid with content.
-
-        This is the main outward-facing function
-        """
+        """Met à jour la grille interne avec du contenu."""
         self.reset()
-        print("Generating {} grid with {} words.".format(self.dimensions, len(self.word_list)))
+        print(f"Generating {self.dimensions} grid with {len(self.word_list)} words.")
 
-        # Fill it up with the recommended number of loops
+        # Remplissage de la grille avec le nombre recommandé de boucles
         for i in range(self.n_loops):
-            print("Starting execution loop {}:".format(i+1))
+            print(f"Starting execution loop {i + 1}:")
             self.generate_content_for_grid()
 
             print("Culling isolated words.")
             self.cull_isolated_words()
             self.reset_grid_to_existing_words()
 
-        print("Built a grid of occupancy {}.".format(basic_ops.compute_occupancy(self.grid)))
+        occupancy = basic_ops.compute_occupancy(self.grid)
+        print(f"Built a grid of occupancy {occupancy:.2f}.")
 
     def reset(self):
+        """Réinitialise la grille et la liste des mots."""
         self.grid = basic_ops.create_empty_grid(self.dimensions)
         self.words_in_grid = []
 
     def generate_content_for_grid(self):
-        """ Uses the basic fill algorithm to fill up the crossword grid.
-        """
-        self.words_in_grid += basic_ops.basic_grid_fill(self.grid, self.target_occupancy, self.timeout, self.dimensions, self.word_list)
+        """Utilise l'algorithme de remplissage de base pour remplir la grille."""
+        new_words = basic_ops.basic_grid_fill(self.grid, self.target_occupancy, self.timeout, self.dimensions, self.word_list)
+        self.words_in_grid.extend(new_words)
 
     def cull_isolated_words(self):
-        """ Removes words that are too isolated from the grid
-
-        TODO: does not seem to work correctly yet.
-        """
-        isolated_words = []
-
-        for word in self.words_in_grid:
-            if basic_ops.is_isolated(word, self.grid):
-                print("Culling word: {}.".format(word))
-                isolated_words.append(word)
-
+        """Supprime les mots qui sont trop isolés de la grille."""
+        isolated_words = [word for word in self.words_in_grid if basic_ops.is_isolated(word, self.grid)]
+        
         for word in isolated_words:
+            print(f"Culling word: {word}.")
             self.words_in_grid.remove(word)
 
     def reset_grid_to_existing_words(self):
-        """ Resets the stored grid to the words in self.words_in_grid
-        """
+        """Réinitialise la grille avec les mots présents dans self.words_in_grid."""
         self.grid = basic_ops.create_empty_grid(self.dimensions)
 
         for word in self.words_in_grid:
