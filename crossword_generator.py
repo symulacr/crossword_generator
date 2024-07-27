@@ -1,89 +1,73 @@
 #!/usr/bin/python3
 """ Crossword Generator
 
-This script takes a list of words and creates a new latex table representing a
-crossword puzzle, which is then printed to PDF. You can then print it to actual
-paper, if you're one of those people.
+Ce script prend une liste de mots et crée une nouvelle table LaTeX représentant un
+puzzle de mots croisés, qui est ensuite imprimée au format PDF. Vous pouvez ensuite
+l'imprimer sur du papier, si cela vous intéresse.
 """
 
-# Standard imports
+# Imports standards
 import argparse
 
-# Custom imports
+# Imports personnalisés
 import file_ops
 import grid_generator
 from grid_generator import GridGenerator
 
 
 def parse_cmdline_args():
-    """ Uses argparse to get commands line args.
-    """
+    """Utilise argparse pour obtenir les arguments de ligne de commande."""
     parser = argparse.ArgumentParser(description='Generate a crossword puzzle.')
-    parser.add_argument('-f', type=str,
-                        default="words.txt",
-                        dest="word_file",
-                        help="A file containing words, one word per line.")
-    parser.add_argument('-d', type=int,
-                        nargs="+",
-                        default=[20, 20],
-                        dest="dim",
-                        help="Dimensions of the grid to build.")
-    parser.add_argument('-n', type=int,
-                        default=1,
-                        dest="n_loops",
-                        help="NUmber of execution loops to run.")
-    parser.add_argument('-t', type=int,
-                        default=10,
-                        dest="timeout",
-                        help="Maximum execution time, in seconds, per execution loop.")
-    parser.add_argument('-o', type=float,
-                        default=1.0,
-                        dest="target_occ",
-                        help="Desired occupancy of the final grid. Default is 1.0, which just uses all of the allotted time.")
-    parser.add_argument('-p', type=str,
-                        default="out.pdf",
-                        dest="out_pdf",
-                        help="Name of the output pdf file.")
-    parser.add_argument('-a', type=str,
-                        default="basic",
-                        dest="algorithm",
-                        help="The algorithm to use.")
+    parser.add_argument('-f', type=str, default="words.txt", dest="word_file",
+                        help="Un fichier contenant des mots, un mot par ligne.")
+    parser.add_argument('-d', type=int, nargs="+", default=[20, 20], dest="dim",
+                        help="Dimensions de la grille à construire.")
+    parser.add_argument('-n', type=int, default=1, dest="n_loops",
+                        help="Nombre de boucles d'exécution à effectuer.")
+    parser.add_argument('-t', type=int, default=10, dest="timeout",
+                        help="Temps d'exécution maximum, en secondes, par boucle d'exécution.")
+    parser.add_argument('-o', type=float, default=1.0, dest="target_occ",
+                        help="Occupation désirée de la grille finale. Par défaut, 1.0, ce qui utilise tout le temps alloué.")
+    parser.add_argument('-p', type=str, default="out.pdf", dest="out_pdf",
+                        help="Nom du fichier PDF de sortie.")
+    parser.add_argument('-a', type=str, default="basic", dest="algorithm",
+                        help="L'algorithme à utiliser.")
 
     return parser.parse_args()
 
 
 def create_generator(algorithm, word_list, dimensions, n_loops, timeout, target_occupancy):
-    """ Constructs the generator object for the given algorithm.
-    """
+    """Construit l'objet générateur pour l'algorithme donné."""
     algorithm_class_map = {"basic": GridGenerator}
 
-    try:
-        return algorithm_class_map[algorithm](word_list, dimensions, n_loops, timeout, target_occupancy)
-    except KeyError:
-        print("Could not create generator object for unknown algorithm: {}.".format(algorithm))
+    if algorithm not in algorithm_class_map:
+        print(f"Could not create generator object for unknown algorithm: {algorithm}.")
+        return None
+
+    return algorithm_class_map[algorithm](word_list, dimensions, n_loops, timeout, target_occupancy)
 
 
 def main():
-    # Parse args
+    # Analyse des arguments
     args = parse_cmdline_args()
 
-    # Read words from file
+    # Lecture des mots depuis le fichier
     words = file_ops.read_word_list(args.word_file)
-    print("Read {} words from file.".format(len(words)))
+    print(f"Read {len(words)} words from file.")
 
-    # Construct the generator object
-    dim = args.dim if len(args.dim)==2 else [args.dim[0], args.dim[0]]
+    # Construction de l'objet générateur
+    dim = args.dim if len(args.dim) == 2 else [args.dim[0], args.dim[0]]
     generator = create_generator(args.algorithm, words, dim, args.n_loops, args.timeout, args.target_occ)
     if not generator:
         return
 
-    # Generate the grid
+    # Génération de la grille
     generator.generate_grid()
 
-    # Write it out
+    # Écriture de la grille
     grid = generator.get_grid()
     words_in_grid = generator.get_words_in_grid()
-    file_ops.write_grid_to_file(grid, words=[x["word"] for x in words_in_grid], out_pdf=args.out_pdf)
+    file_ops.write_grid_to_file(grid, words=[word for word in words_in_grid], out_pdf=args.out_pdf)
     file_ops.write_grid_to_screen(grid, words_in_grid)
 
 
